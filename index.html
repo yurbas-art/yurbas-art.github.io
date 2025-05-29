@@ -4,109 +4,118 @@
   <meta charset="UTF-8">
   <title>Heart Animation</title>
   <style>
-    html, body {
+    body {
       margin: 0;
-      padding: 0;
       overflow: hidden;
-      height: 100%;
       background-color: #F4C2C2;
-      font-family: Courier, monospace;
+      font-family: 'Courier New', monospace;
     }
     canvas {
       display: block;
-      position: absolute;
     }
-    .text-line {
+    #text-container {
       position: absolute;
+      top: 50%;
       left: 50%;
-      transform: translateX(-50%);
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: red;
       font-style: italic;
       font-weight: bold;
-      color: red;
-      white-space: nowrap;
+    }
+    .line {
+      font-size: 36px;
     }
   </style>
 </head>
 <body>
-<canvas id="canvas"></canvas>
-<div id="texts">
-  <div id="text1" class="text-line" style="top: 25%; font-size: 48px;"></div>
-  <div id="text2" class="text-line" style="top: 48%; font-size: 36px;"></div>
-  <div id="text3" class="text-line" style="top: 65%; font-size: 40px;"></div>
-</div>
-<script>
-  const canvas = document.getElementById('canvas');
-  const ctx = canvas.getContext('2d');
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-  canvas.width = width;
-  canvas.height = height;
+  <canvas id="canvas"></canvas>
+  <div id="text-container"></div>
 
-  ctx.translate(width / 2, height / 2);
-  ctx.strokeStyle = 'deepskyblue';
-  ctx.lineWidth = 2;
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-  const startTime = Date.now();
-  let t = 0;
+    const heartX = t => 15 * Math.sin(t) ** 3;
+    const heartY = t => (12 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) * 1.25;
 
-  function heartX(k) {
-    return 15 * Math.pow(Math.sin(k), 3);
-  }
+    let t = 0;
+    const dt = 0.02;
+    const scale = Math.min(canvas.width, canvas.height) * 0.03;
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    let points = [];
 
-  function heartY(k) {
-    const y = 12 * Math.cos(k) - 5 * Math.cos(2 * k) - 2 * Math.cos(3 * k) - Math.cos(4 * k);
-    return y * 1.25;
-  }
+    const startTime = Date.now();
+    const duration = 15000;
+    let textStarted = false;
 
-  let points = [];
-  function animate() {
-    const now = Date.now();
-    if (now - startTime < 11000) {
-      const x = heartX(t) * 25;
-      const y = heartY(t) * 20 + 20;
-      points.push({x, y});
-      if (points.length > 1) {
-        ctx.beginPath();
-        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
-        ctx.lineTo(x, y);
-        ctx.stroke();
+    function drawHeart() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.beginPath();
+      ctx.strokeStyle = "deepskyblue";
+      ctx.lineWidth = 3;
+      if (points.length > 0) ctx.moveTo(points[0].x, points[0].y);
+      for (let p of points) {
+        ctx.lineTo(p.x, p.y);
       }
-      t += 0.1;
-      requestAnimationFrame(animate);
-    } else {
-      startTextTyping();
+      ctx.stroke();
     }
-  }
-  animate();
 
-  const texts = [
-    {id: 'text1', text: 'Dasha'},
-    {id: 'text2', text: 'I love you!'},
-    {id: 'text3', text: ':3'}
-  ];
+    function animate() {
+      const elapsed = Date.now() - startTime;
 
-  function typeText(elementId, text, delay) {
-    return new Promise(resolve => {
-      const el = document.getElementById(elementId);
-      let i = 0;
-      function step() {
-        if (i < text.length) {
-          el.textContent += text[i];
-          i++;
-          setTimeout(step, Math.random() * 150 + 50);
-        } else {
-          resolve();
+      if (elapsed < duration) {
+        const x = centerX + heartX(t) * scale;
+        const y = centerY - heartY(t) * scale; // перевернутое сердце
+        points.push({ x, y });
+        t += dt;
+        drawHeart();
+        requestAnimationFrame(animate);
+      } else {
+        drawHeart();
+        if (!textStarted) {
+          textStarted = true;
+          writeTextSlowly("Dasha", 0);
         }
       }
-      step();
-    });
-  }
-
-  async function startTextTyping() {
-    for (let i = 0; i < texts.length; i++) {
-      await typeText(texts[i].id, texts[i].text);
     }
-  }
-</script>
+
+    const lines = [
+      { text: "Dasha", fontSize: 48 },
+      { text: "I love you!", fontSize: 36 },
+      { text: ":3", fontSize: 40 }
+    ];
+
+    let lineIndex = 0;
+    let charIndex = 0;
+
+    function writeTextSlowly(text, yOffset) {
+      const container = document.getElementById("text-container");
+      const div = document.createElement("div");
+      div.className = "line";
+      div.style.fontSize = `${lines[lineIndex].fontSize}px`;
+      container.appendChild(div);
+
+      function typeLetter() {
+        if (charIndex < text.length) {
+          div.textContent += text[charIndex];
+          charIndex++;
+          setTimeout(typeLetter, Math.random() * 150 + 50);
+        } else {
+          lineIndex++;
+          charIndex = 0;
+          if (lineIndex < lines.length) {
+            setTimeout(() => writeTextSlowly(lines[lineIndex].text, yOffset + 50), 400);
+          }
+        }
+      }
+      typeLetter();
+    }
+
+    animate();
+  </script>
 </body>
 </html>
