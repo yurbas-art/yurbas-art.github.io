@@ -1,143 +1,119 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html>
 <head>
-    <title>Love Heart</title>
+    <title>Heart with Text</title>
     <style>
         body {
             background-color: #F4C2C2;
             margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
             overflow: hidden;
             font-family: 'Courier New', monospace;
         }
+
         canvas {
-            display: block;
             position: absolute;
+            top: 0;
+            left: 0;
         }
-        #text-container {
-            position: relative;
+
+        #text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: red;
+            font-size: 32px;
+            font-weight: bold;
+            font-style: italic;
+            white-space: pre;
             z-index: 10;
             text-align: center;
-            color: red;
+            pointer-events: none;
         }
     </style>
 </head>
 <body>
     <canvas id="heartCanvas"></canvas>
-    <div id="text-container"></div>
+    <div id="text"></div>
 
     <script>
         const canvas = document.getElementById('heartCanvas');
         const ctx = canvas.getContext('2d');
-        const textContainer = document.getElementById('text-container');
+        const textElement = document.getElementById('text');
 
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
         }
+
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
 
-        let animationStartTime;
+        // Параметры
         let t = 0;
-        let heartComplete = false;
-        let heartPoints = [];
+        const heartPoints = [];
+        let heartDrawn = false;
+        const scale = Math.min(window.innerWidth, window.innerHeight) * 0.03;
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2 + 20;
 
-        const messages = [
-            { text: "Dasha", fontSize: 48, yOffset: -0.25 },
-            { text: "I love you!", fontSize: 36, yOffset: 0 },
-            { text: ":3", fontSize: 40, yOffset: 0.2 }
-        ];
-
-        let currentMessage = 0;
-        let currentLetter = 0;
-        let lastLetterTime = 0;
-        const letterDelay = 150;
-        let messageStarted = false;
-
+        // Функции сердца
         function heartX(t) {
-            return 15 * Math.pow(Math.sin(t), 3);
+            return 16 * Math.pow(Math.sin(t), 3);
         }
 
         function heartY(t) {
-            return 12 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+            return 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
         }
 
+        // Текстовая анимация
+        const fullText = "Dasha\nI love you! :3";
+        let currentLetter = 0;
+        let lastLetterTime = 0;
+        const letterDelay = 120;
+
         function drawHeart() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#F4C2C2';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
             ctx.strokeStyle = 'deepskyblue';
             ctx.lineWidth = 3;
             ctx.beginPath();
-            heartPoints.forEach((pt, idx) => {
-                if (idx === 0) ctx.moveTo(pt.x, pt.y);
+            heartPoints.forEach((pt, i) => {
+                if (i === 0) ctx.moveTo(pt.x, pt.y);
                 else ctx.lineTo(pt.x, pt.y);
             });
             ctx.stroke();
         }
 
-        function animateText() {
-            if (currentMessage >= messages.length) return;
-
-            const now = Date.now();
-            if (now - lastLetterTime < letterDelay) return;
-            lastLetterTime = now;
-
-            const msg = messages[currentMessage];
-            if (!msg.element) {
-                msg.element = document.createElement('div');
-                msg.element.style.fontSize = `${msg.fontSize}px`;
-                msg.element.style.fontStyle = 'italic';
-                msg.element.style.fontWeight = 'bold';
-                msg.element.style.position = 'absolute';
-                msg.element.style.left = '50%';
-                msg.element.style.transform = 'translateX(-50%)';
-                msg.element.style.top = `${50 + msg.yOffset * 100}%`;
-                msg.element.textContent = "";
-                textContainer.appendChild(msg.element);
-            }
-
-            msg.element.textContent += msg.text[currentLetter];
-            currentLetter++;
-
-            if (currentLetter >= msg.text.length) {
-                currentMessage++;
-                currentLetter = 0;
-                lastLetterTime += 500; // задержка перед следующим сообщением
-            }
-        }
-
-        function animate(timestamp) {
-            if (!animationStartTime) animationStartTime = timestamp;
-            const elapsed = timestamp - animationStartTime;
-
-            ctx.fillStyle = '#F4C2C2';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2 + 40;
-            const scale = Math.min(canvas.width, canvas.height) * 0.03;
-
-            if (elapsed < 11000) {
+        function animateHeartAndText(timestamp) {
+            if (!heartDrawn) {
                 const x = centerX + heartX(t) * scale;
-                const y = centerY - heartY(t) * scale * 1.25;
+                const y = centerY - heartY(t) * scale;
                 heartPoints.push({ x, y });
+
                 t += 0.05;
-            } else if (!heartComplete) {
-                heartComplete = true;
+                if (t >= 2 * Math.PI) {
+                    heartDrawn = true;
+                }
             }
 
             drawHeart();
 
-            if (heartComplete) {
-                animateText();
+            if (heartDrawn) {
+                const now = Date.now();
+                if (now - lastLetterTime > letterDelay && currentLetter <= fullText.length) {
+                    textElement.textContent = fullText.substring(0, currentLetter);
+                    currentLetter++;
+                    lastLetterTime = now;
+                }
             }
 
-            requestAnimationFrame(animate);
+            requestAnimationFrame(animateHeartAndText);
         }
 
-        requestAnimationFrame(animate);
+        requestAnimationFrame(animateHeartAndText);
     </script>
 </body>
 </html>
