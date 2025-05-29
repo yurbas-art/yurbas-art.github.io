@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Heart with Triangles</title>
+  <meta charset="UTF-8">
+  <title>Animated Heart with Text</title>
   <style>
     body {
       margin: 0;
-      background-color: #F4C2C2;
       overflow: hidden;
+      background-color: #F4C2C2; /* Бежево-красный фон */
     }
     canvas {
       display: block;
@@ -15,66 +15,99 @@
   </style>
 </head>
 <body>
-  <canvas id="canvas"></canvas>
+<canvas id="canvas"></canvas>
+<script>
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
 
-  <script>
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2 + 20; // смещение по Y для выравнивания текста
+  const scaleX = 25;
+  const scaleY = 20;
 
-    function resize() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+  function heartX(t) {
+    return 15 * Math.pow(Math.sin(t), 3);
+  }
+
+  function heartY(t) {
+    const y = 12 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+    return y * 1.25;
+  }
+
+  let t = 0;
+  let points = [];
+  let startTime = performance.now();
+  let drawComplete = false;
+  
+  function drawHeart(timestamp) {
+    if (!drawComplete && (timestamp - startTime) < 11000) {
+      const x = cx + heartX(t) * scaleX;
+      const y = cy - heartY(t) * scaleY;
+      points.push({ x, y });
+      
+      if (points.length > 1) {
+        ctx.beginPath();
+        ctx.strokeStyle = 'deepskyblue';
+        ctx.lineWidth = 2;
+        ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+        ctx.stroke();
+      }
+      
+      t += 0.05;
+      requestAnimationFrame(drawHeart);
+    } else if (!drawComplete) {
+      drawComplete = true;
+      showText();
     }
-    resize();
-    window.addEventListener("resize", resize);
+  }
 
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const scale = Math.min(canvas.width, canvas.height) * 0.03;
+  function showText() {
+    const lines = [
+      { text: "Dasha", y: -90, fontSize: 48 },
+      { text: "I love you!", y: -30, fontSize: 36 },
+      { text: ":3", y: 30, fontSize: 40 },
+    ];
 
-    let points = [];
-    let t = 0;
-    const dt = 0.1;
+    let index = 0;
 
-    function heartX(t) {
-      return 16 * Math.pow(Math.sin(t), 3);
-    }
+    function typeLine() {
+      if (index >= lines.length) return;
 
-    function heartY(t) {
-      return 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
-    }
+      const { text, y, fontSize } = lines[index];
+      let i = 0;
 
-    function drawTriangle(p1, p2, center) {
-      ctx.beginPath();
-      ctx.moveTo(p1.x, p1.y);
-      ctx.lineTo(p2.x, p2.y);
-      ctx.lineTo(center.x, center.y);
-      ctx.closePath();
-
-      ctx.fillStyle = `rgba(255, 105, 180, 0.2)`; // нежно-розовый, полупрозрачный
-      ctx.fill();
-    }
-
-    function animate() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // рисуем все треугольники
-      for (let i = 1; i < points.length; i++) {
-        drawTriangle(points[i - 1], points[i], { x: centerX, y: centerY });
+      function typeChar() {
+        const line = text.substring(0, i + 1);
+        ctx.clearRect(cx - 300, cy + y - fontSize, 600, fontSize + 10);
+        ctx.font = `italic bold ${fontSize}px Courier`;
+        ctx.fillStyle = 'red';
+        ctx.textAlign = 'center';
+        ctx.fillText(line, cx, cy + y);
+        
+        i++;
+        if (i < text.length) {
+          setTimeout(typeChar, Math.random() * 150 + 50);
+        } else {
+          index++;
+          setTimeout(typeLine, 300);
+        }
       }
 
-      // добавляем следующую точку
-      if (t <= Math.PI * 2) {
-        const x = centerX + heartX(t) * scale;
-        const y = centerY - heartY(t) * scale; // инвертируем Y
-        points.push({ x, y });
-        t += dt;
-      }
-
-      requestAnimationFrame(animate);
+      typeChar();
     }
 
-    animate();
-  </script>
+    typeLine();
+  }
+
+  drawHeart();
+</script>
 </body>
 </html>
