@@ -25,6 +25,7 @@
       font-style: italic;
       font-weight: bold;
       pointer-events: none;
+      visibility: hidden;
     }
     .line {
       font-size: 48px;
@@ -58,10 +59,10 @@
   let charIndex = 0;
   const letterDelay = 100;
   let lastLetterTime = 0;
-  let textDone = false;
+  let textStarted = false;
 
   function animateText(time) {
-    if (textDone) return;
+    if (!textStarted) return;
     if (!lastLetterTime) lastLetterTime = time;
 
     if (time - lastLetterTime >= letterDelay) {
@@ -75,7 +76,7 @@
         textIndex++;
         charIndex = 0;
         if (textIndex >= textLines.length) {
-          textDone = true;
+          return;
         }
       }
     }
@@ -91,8 +92,8 @@
     return y * 1.25;
   }
 
-  const totalDuration = 5000; // 5 seconds
-  const steps = 1000; // higher = smoother
+  const drawDuration = 7000; // 7 seconds
+  const steps = 1000;
   let currentStep = 0;
   const points = [];
 
@@ -103,7 +104,7 @@
 
     ctx.beginPath();
     ctx.strokeStyle = 'deepskyblue';
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 8;
 
     for (let i = 0; i < points.length; i++) {
       const { x, y } = points[i];
@@ -128,9 +129,21 @@
     }
 
     drawHeartFrame();
-    animateText(timestamp);
 
-    if (elapsed < totalDuration || !textDone) {
+    if (elapsed < drawDuration) {
+      requestAnimationFrame(animateHeart);
+    } else {
+      // Анимация завершена, запускаем текст
+      if (!textStarted) {
+        textStarted = true;
+        document.getElementById('text-container').style.visibility = 'visible';
+        requestAnimationFrame(animateText);
+      }
+    }
+
+    if (textStarted) {
+      requestAnimationFrame(animateText);
+    } else {
       requestAnimationFrame(animateHeart);
     }
   }
