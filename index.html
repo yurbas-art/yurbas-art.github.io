@@ -11,151 +11,150 @@
             align-items: center;
             height: 100vh;
             overflow: hidden;
+            font-family: 'Courier New', monospace;
         }
         canvas {
             display: block;
+            position: absolute;
+        }
+        #text-container {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            color: red;
         }
     </style>
 </head>
 <body>
-    <canvas id="heartCanvas" width="1000" height="800"></canvas>
+    <canvas id="heartCanvas"></canvas>
+    <div id="text-container"></div>
 
     <script>
         const canvas = document.getElementById('heartCanvas');
         const ctx = canvas.getContext('2d');
+        const textContainer = document.getElementById('text-container');
         
-        // Сохраняем все точки сердца
-        let heartPoints = [];
-        let heartComplete = false;
+        // Устанавливаем размер canvas равным размеру окна
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Параметры анимации
         let animationStartTime;
         let i = 0;
+        let heartComplete = false;
+        let textAnimationComplete = false;
+        const heartPoints = [];
         
-        // Текстовые сообщения
+        // Текст для отображения
         const messages = [
-            { text: "Dasha", y: 120, fontSize: 48, color: "red", letters: [] },
-            { text: "I love you!", y: 40, fontSize: 36, color: "red", letters: [] },
-            { text: ":3", y: -40, fontSize: 40, color: "red", letters: [] }
+            { text: "Dasha", fontSize: 48, yOffset: 0.3 },
+            { text: "I love you!", fontSize: 36, yOffset: 0.1 },
+            { text: ":3", fontSize: 40, yOffset: -0.1 }
         ];
-        
+        let currentMessage = 0;
+        let currentLetter = 0;
         let lastLetterTime = 0;
-        const letterDelay = 100; // Задержка между буквами в мс
+        const letterDelay = 150; // Задержка между буквами
 
-        // Функции для построения сердца
-        function heart(k) {
-            return 15 * Math.sin(k) ** 3;
+        // Тригонометрические функции для сердца
+        function heartX(t) {
+            return 15 * Math.pow(Math.sin(t), 3);
         }
 
-        function heart1(k) {
-            const y = 12 * Math.cos(k) - 5 * Math.cos(2 * k) - 2 * Math.cos(3 * k) - Math.cos(4 * k);
-            return y * 1.25;
+        function heartY(t) {
+            return -(12 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t)) * 1.25;
         }
 
-        // Очистка canvas
-        function clearCanvas() {
-            ctx.fillStyle = '#F4C2C2';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-
-        // Рисование всех точек сердца
-        function drawHeartPoints() {
-            if (heartPoints.length < 2) return;
-            
+        // Рисование сердца
+        function drawHeart() {
             ctx.strokeStyle = 'deepskyblue';
             ctx.lineWidth = 3;
             ctx.beginPath();
-            ctx.moveTo(heartPoints[0].x, heartPoints[0].y);
             
-            for (let i = 1; i < heartPoints.length; i++) {
-                ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
+            // Рисуем все сохраненные точки
+            for (let j = 0; j < heartPoints.length; j++) {
+                const point = heartPoints[j];
+                if (j === 0) {
+                    ctx.moveTo(point.x, point.y);
+                } else {
+                    ctx.lineTo(point.x, point.y);
+                }
             }
             
             ctx.stroke();
         }
 
-        // Добавление новых точек сердца
-        function addHeartPoint() {
-            const x = heart(i) * 30;
-            const y = heart1(i) * 25 + 30;
-            
-            heartPoints.push({
-                x: canvas.width / 2 + x,
-                y: canvas.height / 2 - y
-            });
-            
-            i += 0.03; // Уменьшен шаг для более плавного рисунка
-        }
-
-        // Инициализация текста
-        function initText() {
-            messages.forEach(msg => {
-                msg.letters = msg.text.split('');
-                msg.drawnLetters = [];
-                ctx.font = `italic bold ${msg.fontSize}px Courier`;
-                msg.textWidth = ctx.measureText(msg.text).width;
-            });
-        }
-
-        // Рисование текста по буквам
-        function drawText() {
+        // Анимация текста
+        function animateText() {
             const now = Date.now();
-            if (now - lastLetterTime < letterDelay) return;
-            
+            if (now - lastLetterTime < letterDelay || textAnimationComplete) return;
             lastLetterTime = now;
             
-            let letterAdded = false;
+            const msg = messages[currentMessage];
+            if (!msg.element) {
+                msg.element = document.createElement('div');
+                msg.element.style.fontSize = `${msg.fontSize}px`;
+                msg.element.style.fontStyle = 'italic';
+                msg.element.style.fontWeight = 'bold';
+                msg.element.style.position = 'absolute';
+                msg.element.style.left = '50%';
+                msg.element.style.transform = 'translateX(-50%)';
+                msg.element.style.top = `${50 + msg.yOffset * 100}%`;
+                textContainer.appendChild(msg.element);
+            }
             
-            messages.forEach(msg => {
-                if (msg.letters.length > 0) {
-                    const letter = msg.letters.shift();
-                    msg.drawnLetters.push(letter);
-                    letterAdded = true;
+            msg.element.textContent = msg.text.substring(0, currentLetter + 1);
+            currentLetter++;
+            
+            if (currentLetter >= msg.text.length) {
+                currentLetter = 0;
+                currentMessage++;
+                
+                if (currentMessage >= messages.length) {
+                    textAnimationComplete = true;
                 }
-            });
-            
-            if (!letterAdded) return;
-            
-            // Перерисовываем весь текст
-            messages.forEach(msg => {
-                if (msg.drawnLetters.length === 0) return;
-                
-                ctx.font = `italic bold ${msg.fontSize}px Courier`;
-                ctx.fillStyle = msg.color;
-                const fullText = msg.drawnLetters.join('');
-                const x = canvas.width / 2 - msg.textWidth / 2;
-                const y = canvas.height / 2 - msg.y;
-                
-                ctx.fillText(fullText, x, y);
-            });
+            }
         }
 
         // Основной цикл анимации
-        function animate() {
-            clearCanvas();
+        function animate(timestamp) {
+            if (!animationStartTime) animationStartTime = timestamp;
+            const elapsed = timestamp - animationStartTime;
             
-            // Рисуем сохраненные точки сердца
-            drawHeartPoints();
+            ctx.fillStyle = '#F4C2C2';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Если сердце еще не полностью нарисовано, добавляем новые точки
-            if (!heartComplete) {
-                addHeartPoint();
+            // Анимация сердца (11 секунд)
+            if (elapsed < 11000) {
+                const t = i * 0.03;
+                const scale = Math.min(canvas.width, canvas.height) * 0.2;
                 
-                if (!animationStartTime) animationStartTime = Date.now();
-                if (Date.now() - animationStartTime > 13000) { // Увеличено время для полной прорисовки
-                    heartComplete = true;
-                    initText();
-                }
+                heartPoints.push({
+                    x: canvas.width/2 + heartX(t) * scale/2,
+                    y: canvas.height/2 + heartY(t) * scale/2
+                });
+                
+                i += 0.05;
+            } else if (!heartComplete) {
+                heartComplete = true;
             }
             
-            // Рисуем текст, если сердце готово
+            drawHeart();
+            
+            // Анимация текста после завершения сердца
             if (heartComplete) {
-                drawText();
+                animateText();
             }
             
             requestAnimationFrame(animate);
         }
 
         // Запуск анимации
-        animate();
+        requestAnimationFrame(animate);
     </script>
 </body>
 </html>
