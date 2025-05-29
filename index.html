@@ -11,111 +11,131 @@
       font-family: 'Courier New', monospace;
     }
     canvas {
-      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
     }
     #text-container {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      text-align: center;
       color: red;
+      text-align: center;
       font-style: italic;
       font-weight: bold;
+      pointer-events: none;
     }
     .line {
-      font-size: 36px;
+      font-size: 48px;
+      white-space: pre;
     }
   </style>
 </head>
 <body>
-  <canvas id="canvas"></canvas>
-  <div id="text-container"></div>
+<canvas id="heartCanvas"></canvas>
+<div id="text-container">
+  <div class="line" id="line1"></div>
+  <div class="line" id="line2" style="font-size: 36px;"></div>
+  <div class="line" id="line3" style="font-size: 40px;"></div>
+</div>
 
-  <script>
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+<script>
+  const canvas = document.getElementById('heartCanvas');
+  const ctx = canvas.getContext('2d');
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  canvas.width = width;
+  canvas.height = height;
 
-    const heartX = t => 15 * Math.sin(t) ** 3;
-    const heartY = t => (12 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) * 1.25;
+  const textLines = [
+    { text: 'Dasha', element: document.getElementById('line1') },
+    { text: 'I love you!', element: document.getElementById('line2') },
+    { text: ':3', element: document.getElementById('line3') }
+  ];
 
-    let t = 0;
-    const dt = 0.02;
-    const scale = Math.min(canvas.width, canvas.height) * 0.03;
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    let points = [];
+  let textIndex = 0;
+  let charIndex = 0;
+  const letterDelay = 100;
+  let lastLetterTime = 0;
+  let textDone = false;
 
-    const startTime = Date.now();
-    const duration = 15000;
-    let textStarted = false;
+  function animateText(time) {
+    if (textDone) return;
+    if (!lastLetterTime) lastLetterTime = time;
 
-    function drawHeart() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.beginPath();
-      ctx.strokeStyle = "deepskyblue";
-      ctx.lineWidth = 3;
-      if (points.length > 0) ctx.moveTo(points[0].x, points[0].y);
-      for (let p of points) {
-        ctx.lineTo(p.x, p.y);
-      }
-      ctx.stroke();
-    }
+    if (time - lastLetterTime >= letterDelay) {
+      const line = textLines[textIndex];
+      const nextText = line.text.slice(0, charIndex + 1);
+      line.element.textContent = nextText;
+      charIndex++;
+      lastLetterTime = time;
 
-    function animate() {
-      const elapsed = Date.now() - startTime;
-
-      if (elapsed < duration) {
-        const x = centerX + heartX(t) * scale;
-        const y = centerY - heartY(t) * scale; // перевернутое сердце
-        points.push({ x, y });
-        t += dt;
-        drawHeart();
-        requestAnimationFrame(animate);
-      } else {
-        drawHeart();
-        if (!textStarted) {
-          textStarted = true;
-          writeTextSlowly("Dasha", 0);
+      if (charIndex >= line.text.length) {
+        textIndex++;
+        charIndex = 0;
+        if (textIndex >= textLines.length) {
+          textDone = true;
         }
       }
     }
+  }
 
-    const lines = [
-      { text: "Dasha", fontSize: 48 },
-      { text: "I love you!", fontSize: 36 },
-      { text: ":3", fontSize: 40 }
-    ];
+  function heartX(t) {
+    return 15 * Math.sin(t) ** 3;
+  }
 
-    let lineIndex = 0;
-    let charIndex = 0;
+  function heartY(t) {
+    const y = 12 * Math.cos(t) - 5 * Math.cos(2 * t)
+            - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+    return y * 1.25;
+  }
 
-    function writeTextSlowly(text, yOffset) {
-      const container = document.getElementById("text-container");
-      const div = document.createElement("div");
-      div.className = "line";
-      div.style.fontSize = `${lines[lineIndex].fontSize}px`;
-      container.appendChild(div);
+  const totalDuration = 5000; // 5 seconds
+  const steps = 1000; // higher = smoother
+  let currentStep = 0;
+  const points = [];
 
-      function typeLetter() {
-        if (charIndex < text.length) {
-          div.textContent += text[charIndex];
-          charIndex++;
-          setTimeout(typeLetter, Math.random() * 150 + 50);
-        } else {
-          lineIndex++;
-          charIndex = 0;
-          if (lineIndex < lines.length) {
-            setTimeout(() => writeTextSlowly(lines[lineIndex].text, yOffset + 50), 400);
-          }
-        }
-      }
-      typeLetter();
+  function drawHeartFrame() {
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = '#F4C2C2';
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.beginPath();
+    ctx.strokeStyle = 'deepskyblue';
+    ctx.lineWidth = 5;
+
+    for (let i = 0; i < points.length; i++) {
+      const { x, y } = points[i];
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
     }
 
-    animate();
-  </script>
+    ctx.stroke();
+  }
+
+  function animateHeart(timestamp) {
+    if (!animateHeart.start) animateHeart.start = timestamp;
+    const elapsed = timestamp - animateHeart.start;
+
+    if (currentStep <= steps) {
+      const t = Math.PI * 2 * currentStep / steps;
+      const scale = Math.min(width, height) / 30;
+      const x = width / 2 + heartX(t) * scale;
+      const y = height / 2 - heartY(t) * scale;
+      points.push({ x, y });
+      currentStep++;
+    }
+
+    drawHeartFrame();
+    animateText(timestamp);
+
+    if (elapsed < totalDuration || !textDone) {
+      requestAnimationFrame(animateHeart);
+    }
+  }
+
+  requestAnimationFrame(animateHeart);
+</script>
 </body>
 </html>
