@@ -18,7 +18,7 @@
     </style>
 </head>
 <body>
-    <canvas id="heartCanvas" width="800" height="600"></canvas>
+    <canvas id="heartCanvas" width="1000" height="800"></canvas>
 
     <script>
         const canvas = document.getElementById('heartCanvas');
@@ -32,15 +32,15 @@
         
         // Текстовые сообщения
         const messages = [
-            { text: "Dasha", y: 90, fontSize: 48, color: "red", letters: [] },
-            { text: "I love you!", y: 30, fontSize: 36, color: "red", letters: [] },
-            { text: ":3", y: -30, fontSize: 40, color: "red", letters: [] }
+            { text: "Dasha", y: 120, fontSize: 48, color: "red", letters: [] },
+            { text: "I love you!", y: 40, fontSize: 36, color: "red", letters: [] },
+            { text: ":3", y: -40, fontSize: 40, color: "red", letters: [] }
         ];
         
         let lastLetterTime = 0;
         const letterDelay = 100; // Задержка между буквами в мс
 
-        // Функции для построения сердца (аналогичные Python-коду)
+        // Функции для построения сердца
         function heart(k) {
             return 15 * Math.sin(k) ** 3;
         }
@@ -61,7 +61,7 @@
             if (heartPoints.length < 2) return;
             
             ctx.strokeStyle = 'deepskyblue';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 3;
             ctx.beginPath();
             ctx.moveTo(heartPoints[0].x, heartPoints[0].y);
             
@@ -74,15 +74,15 @@
 
         // Добавление новых точек сердца
         function addHeartPoint() {
-            const x = heart(i) * 25;
-            const y = heart1(i) * 20 + 20;
+            const x = heart(i) * 30;
+            const y = heart1(i) * 25 + 30;
             
             heartPoints.push({
                 x: canvas.width / 2 + x,
                 y: canvas.height / 2 - y
             });
             
-            i += 0.05;
+            i += 0.03; // Уменьшен шаг для более плавного рисунка
         }
 
         // Инициализация текста
@@ -140,7 +140,7 @@
                 addHeartPoint();
                 
                 if (!animationStartTime) animationStartTime = Date.now();
-                if (Date.now() - animationStartTime > 11000) {
+                if (Date.now() - animationStartTime > 13000) { // Увеличено время для полной прорисовки
                     heartComplete = true;
                     initText();
                 }
