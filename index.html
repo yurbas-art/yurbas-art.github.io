@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Heart with Text</title>
+    <title>Imperfect Heart</title>
     <style>
         body {
             background-color: #F4C2C2;
@@ -49,7 +49,6 @@
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
 
-        // Параметры
         let t = 0;
         const heartPoints = [];
         let heartDrawn = false;
@@ -57,16 +56,24 @@
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2 + 20;
 
-        // Функции сердца
+        // Добавим лёгкие искажения через синус + шум
+        function noise(t) {
+            return (Math.sin(t * 7 + Date.now() * 0.001) + Math.cos(t * 5)) * 0.2;
+        }
+
         function heartX(t) {
-            return 16 * Math.pow(Math.sin(t), 3);
+            return (16 + noise(t)) * Math.pow(Math.sin(t), 3);
         }
 
         function heartY(t) {
-            return 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+            return (
+                13 * Math.cos(t) -
+                5 * Math.cos(2 * t) -
+                2 * Math.cos(3 * t) -
+                Math.cos(4 * t)
+            ) + noise(t);
         }
 
-        // Текстовая анимация
         const fullText = "Dasha\nI love you! :3";
         let currentLetter = 0;
         let lastLetterTime = 0;
@@ -78,7 +85,7 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             ctx.strokeStyle = 'deepskyblue';
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 2.5;
             ctx.beginPath();
             heartPoints.forEach((pt, i) => {
                 if (i === 0) ctx.moveTo(pt.x, pt.y);
