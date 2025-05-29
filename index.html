@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Heart Animation</title>
   <style>
     body {
@@ -12,8 +12,7 @@
     }
     canvas {
       position: absolute;
-      top: 0;
-      left: 0;
+      top: 0; left: 0;
     }
     #text-container {
       position: absolute;
@@ -26,129 +25,141 @@
       font-weight: bold;
       pointer-events: none;
       visibility: hidden;
+      user-select: none;
     }
     .line {
-      font-size: 48px;
-      white-space: pre;
+      white-space: nowrap;
+      margin: 5px 0;
     }
+    #line1 { font-size: 48px; }
+    #line2 { font-size: 36px; }
+    #line3 { font-size: 40px; }
   </style>
 </head>
 <body>
-<canvas id="heartCanvas"></canvas>
-<div id="text-container">
-  <div class="line" id="line1"></div>
-  <div class="line" id="line2" style="font-size: 36px;"></div>
-  <div class="line" id="line3" style="font-size: 40px;"></div>
-</div>
+  <canvas id="heartCanvas"></canvas>
+  <div id="text-container">
+    <div id="line1" class="line"></div>
+    <div id="line2" class="line"></div>
+    <div id="line3" class="line"></div>
+  </div>
 
-<script>
-  const canvas = document.getElementById('heartCanvas');
-  const ctx = canvas.getContext('2d');
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-  canvas.width = width;
-  canvas.height = height;
+  <script>
+    const canvas = document.getElementById('heartCanvas');
+    const ctx = canvas.getContext('2d');
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
 
-  const textLines = [
-    { text: 'Dasha', element: document.getElementById('line1') },
-    { text: 'I love you!', element: document.getElementById('line2') },
-    { text: ':3', element: document.getElementById('line3') }
-  ];
+    const textLines = [
+      { text: 'Dasha', element: document.getElementById('line1') },
+      { text: 'I love you!', element: document.getElementById('line2') },
+      { text: ':3', element: document.getElementById('line3') }
+    ];
 
-  let textIndex = 0;
-  let charIndex = 0;
-  const letterDelay = 100;
-  let lastLetterTime = 0;
-  let textStarted = false;
+    let textIndex = 0;
+    let charIndex = 0;
+    const letterDelay = 150; // задержка между буквами (мс)
+    let lastLetterTime = 0;
+    let textStarted = false;
 
-  function animateText(time) {
-    if (!textStarted) return;
-    if (!lastLetterTime) lastLetterTime = time;
+    function animateText(time) {
+      if (!textStarted) return;
+      if (!lastLetterTime) lastLetterTime = time;
 
-    if (time - lastLetterTime >= letterDelay) {
-      const line = textLines[textIndex];
-      const nextText = line.text.slice(0, charIndex + 1);
-      line.element.textContent = nextText;
-      charIndex++;
-      lastLetterTime = time;
+      if (time - lastLetterTime >= letterDelay) {
+        const line = textLines[textIndex];
+        const nextText = line.text.slice(0, charIndex + 1);
+        line.element.textContent = nextText;
+        charIndex++;
+        lastLetterTime = time;
 
-      if (charIndex >= line.text.length) {
-        textIndex++;
-        charIndex = 0;
-        if (textIndex >= textLines.length) {
-          return;
+        if (charIndex >= line.text.length) {
+          textIndex++;
+          charIndex = 0;
+          if (textIndex >= textLines.length) {
+            // Все строки выведены — можно остановить анимацию текста
+            return;
+          }
+        }
+      }
+      requestAnimationFrame(animateText);
+    }
+
+    function heartX(t) {
+      return 15 * Math.sin(t) ** 3;
+    }
+
+    function heartY(t) {
+      const y = 12 * Math.cos(t) - 5 * Math.cos(2 * t)
+              - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+      return y * 1.25;
+    }
+
+    const steps = 1000;
+    let currentStep = 0;
+    const points = [];
+
+    const scale = Math.min(width, height) / 30;
+
+    function drawHeartFrame() {
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = '#F4C2C2';
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.beginPath();
+      ctx.strokeStyle = 'deepskyblue';
+      ctx.lineWidth = 8;
+
+      for (let i = 0; i < points.length; i++) {
+        const { x, y } = points[i];
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+
+      ctx.stroke();
+    }
+
+    // Медленное добавление точек - увеличиваем шаг отрисовки
+    // в 3 раза медленнее: 1000 точек -> 3000 кадров
+    function animateHeart(timestamp) {
+      if (!animateHeart.lastTimestamp) animateHeart.lastTimestamp = timestamp;
+      if (!animateHeart.accumTime) animateHeart.accumTime = 0;
+
+      // Сколько времени прошло с прошлого кадра (мс)
+      const delta = timestamp - animateHeart.lastTimestamp;
+      animateHeart.lastTimestamp = timestamp;
+
+      animateHeart.accumTime += delta;
+
+      // Добавляем точку примерно раз в 3 мс (3000 кадров ~ 9-10сек)
+      const pointInterval = 3;
+
+      while (animateHeart.accumTime > pointInterval && currentStep <= steps) {
+        const t = Math.PI * 2 * currentStep / steps;
+        const x = width / 2 + heartX(t) * scale;
+        const y = height / 2 - heartY(t) * scale;
+        points.push({ x, y });
+        currentStep++;
+        animateHeart.accumTime -= pointInterval;
+      }
+
+      drawHeartFrame();
+
+      if (currentStep <= steps) {
+        requestAnimationFrame(animateHeart);
+      } else {
+        // Закончили рисовать сердце - показываем текст и запускаем анимацию текста
+        if (!textStarted) {
+          textStarted = true;
+          document.getElementById('text-container').style.visibility = 'visible';
+          requestAnimationFrame(animateText);
         }
       }
     }
-  }
 
-  function heartX(t) {
-    return 15 * Math.sin(t) ** 3;
-  }
-
-  function heartY(t) {
-    const y = 12 * Math.cos(t) - 5 * Math.cos(2 * t)
-            - 2 * Math.cos(3 * t) - Math.cos(4 * t);
-    return y * 1.25;
-  }
-
-  const drawDuration = 7000; // 7 seconds
-  const steps = 1000;
-  let currentStep = 0;
-  const points = [];
-
-  function drawHeartFrame() {
-    ctx.clearRect(0, 0, width, height);
-    ctx.fillStyle = '#F4C2C2';
-    ctx.fillRect(0, 0, width, height);
-
-    ctx.beginPath();
-    ctx.strokeStyle = 'deepskyblue';
-    ctx.lineWidth = 8;
-
-    for (let i = 0; i < points.length; i++) {
-      const { x, y } = points[i];
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-
-    ctx.stroke();
-  }
-
-  function animateHeart(timestamp) {
-    if (!animateHeart.start) animateHeart.start = timestamp;
-    const elapsed = timestamp - animateHeart.start;
-
-    if (currentStep <= steps) {
-      const t = Math.PI * 2 * currentStep / steps;
-      const scale = Math.min(width, height) / 30;
-      const x = width / 2 + heartX(t) * scale;
-      const y = height / 2 - heartY(t) * scale;
-      points.push({ x, y });
-      currentStep++;
-    }
-
-    drawHeartFrame();
-
-    if (elapsed < drawDuration) {
-      requestAnimationFrame(animateHeart);
-    } else {
-      // Анимация завершена, запускаем текст
-      if (!textStarted) {
-        textStarted = true;
-        document.getElementById('text-container').style.visibility = 'visible';
-        requestAnimationFrame(animateText);
-      }
-    }
-
-    if (textStarted) {
-      requestAnimationFrame(animateText);
-    } else {
-      requestAnimationFrame(animateHeart);
-    }
-  }
-
-  requestAnimationFrame(animateHeart);
-</script>
+    requestAnimationFrame(animateHeart);
+  </script>
 </body>
 </html>
