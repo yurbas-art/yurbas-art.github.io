@@ -1,126 +1,80 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Imperfect Heart</title>
-    <style>
-        body {
-            background-color: #F4C2C2;
-            margin: 0;
-            overflow: hidden;
-            font-family: 'Courier New', monospace;
-        }
-
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-
-        #text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: red;
-            font-size: 32px;
-            font-weight: bold;
-            font-style: italic;
-            white-space: pre;
-            z-index: 10;
-            text-align: center;
-            pointer-events: none;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Heart with Triangles</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #F4C2C2;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
 </head>
 <body>
-    <canvas id="heartCanvas"></canvas>
-    <div id="text"></div>
+  <canvas id="canvas"></canvas>
 
-    <script>
-        const canvas = document.getElementById('heartCanvas');
-        const ctx = canvas.getContext('2d');
-        const textElement = document.getElementById('text');
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
 
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener("resize", resize);
 
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const scale = Math.min(canvas.width, canvas.height) * 0.03;
 
-        let t = 0;
-        const heartPoints = [];
-        let heartDrawn = false;
-        const scale = Math.min(window.innerWidth, window.innerHeight) * 0.03;
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2 + 20;
+    let points = [];
+    let t = 0;
+    const dt = 0.1;
 
-        // Добавим лёгкие искажения через синус + шум
-        function noise(t) {
-            return (Math.sin(t * 7 + Date.now() * 0.001) + Math.cos(t * 5)) * 0.2;
-        }
+    function heartX(t) {
+      return 16 * Math.pow(Math.sin(t), 3);
+    }
 
-        function heartX(t) {
-            return (16 + noise(t)) * Math.pow(Math.sin(t), 3);
-        }
+    function heartY(t) {
+      return 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+    }
 
-        function heartY(t) {
-            return (
-                13 * Math.cos(t) -
-                5 * Math.cos(2 * t) -
-                2 * Math.cos(3 * t) -
-                Math.cos(4 * t)
-            ) + noise(t);
-        }
+    function drawTriangle(p1, p2, center) {
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.lineTo(center.x, center.y);
+      ctx.closePath();
 
-        const fullText = "Dasha\nI love you! :3";
-        let currentLetter = 0;
-        let lastLetterTime = 0;
-        const letterDelay = 120;
+      ctx.fillStyle = `rgba(255, 105, 180, 0.2)`; // нежно-розовый, полупрозрачный
+      ctx.fill();
+    }
 
-        function drawHeart() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#F4C2C2';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            ctx.strokeStyle = 'deepskyblue';
-            ctx.lineWidth = 2.5;
-            ctx.beginPath();
-            heartPoints.forEach((pt, i) => {
-                if (i === 0) ctx.moveTo(pt.x, pt.y);
-                else ctx.lineTo(pt.x, pt.y);
-            });
-            ctx.stroke();
-        }
+      // рисуем все треугольники
+      for (let i = 1; i < points.length; i++) {
+        drawTriangle(points[i - 1], points[i], { x: centerX, y: centerY });
+      }
 
-        function animateHeartAndText(timestamp) {
-            if (!heartDrawn) {
-                const x = centerX + heartX(t) * scale;
-                const y = centerY - heartY(t) * scale;
-                heartPoints.push({ x, y });
+      // добавляем следующую точку
+      if (t <= Math.PI * 2) {
+        const x = centerX + heartX(t) * scale;
+        const y = centerY - heartY(t) * scale; // инвертируем Y
+        points.push({ x, y });
+        t += dt;
+      }
 
-                t += 0.05;
-                if (t >= 2 * Math.PI) {
-                    heartDrawn = true;
-                }
-            }
+      requestAnimationFrame(animate);
+    }
 
-            drawHeart();
-
-            if (heartDrawn) {
-                const now = Date.now();
-                if (now - lastLetterTime > letterDelay && currentLetter <= fullText.length) {
-                    textElement.textContent = fullText.substring(0, currentLetter);
-                    currentLetter++;
-                    lastLetterTime = now;
-                }
-            }
-
-            requestAnimationFrame(animateHeartAndText);
-        }
-
-        requestAnimationFrame(animateHeartAndText);
-    </script>
+    animate();
+  </script>
 </body>
 </html>
