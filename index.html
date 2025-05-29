@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Анимированное сердце</title>
+    <title>Love Heart</title>
     <style>
         body {
             background-color: #F4C2C2;
+            margin: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            margin: 0;
             overflow: hidden;
         }
         canvas {
@@ -24,24 +24,23 @@
         const canvas = document.getElementById('heartCanvas');
         const ctx = canvas.getContext('2d');
         
-        // Настройки анимации
-        let i = 0;
-        let animationId;
-        let startTime;
-        let textLines = [
-            { text: "Dasha", y: 90, fontSize: 48, letters: [], drawnLetters: [] },
-            { text: "I love you!", y: 30, fontSize: 36, letters: [], drawnLetters: [] },
-            { text: ":3", y: -30, fontSize: 40, letters: [], drawnLetters: [] }
-        ];
-        let lastLetterTime = 0;
-        let letterDelay = 100; // Задержка между буквами в мс
-        
-        // Сохраняем все точки сердца для повторной отрисовки
+        // Сохраняем все точки сердца
         let heartPoints = [];
         let heartComplete = false;
-        let lastX, lastY;
+        let animationStartTime;
+        let i = 0;
+        
+        // Текстовые сообщения
+        const messages = [
+            { text: "Dasha", y: 90, fontSize: 48, color: "red", letters: [] },
+            { text: "I love you!", y: 30, fontSize: 36, color: "red", letters: [] },
+            { text: ":3", y: -30, fontSize: 40, color: "red", letters: [] }
+        ];
+        
+        let lastLetterTime = 0;
+        const letterDelay = 100; // Задержка между буквами в мс
 
-        // Функции для рисования сердца
+        // Функции для построения сердца (аналогичные Python-коду)
         function heart(k) {
             return 15 * Math.sin(k) ** 3;
         }
@@ -57,7 +56,7 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
-        // Рисование всех сохраненных точек сердца
+        // Рисование всех точек сердца
         function drawHeartPoints() {
             if (heartPoints.length < 2) return;
             
@@ -73,53 +72,42 @@
             ctx.stroke();
         }
 
-        // Добавление новой точки сердца
+        // Добавление новых точек сердца
         function addHeartPoint() {
             const x = heart(i) * 25;
             const y = heart1(i) * 20 + 20;
             
-            if (typeof lastX !== 'undefined') {
-                heartPoints.push({
-                    x: canvas.width / 2 + lastX,
-                    y: canvas.height / 2 - lastY
-                });
-            }
-            
-            lastX = x;
-            lastY = y;
-            i += 0.05; // Уменьшил шаг для более плавного сердца
-            
-            // Добавляем последнюю точку
             heartPoints.push({
                 x: canvas.width / 2 + x,
                 y: canvas.height / 2 - y
             });
+            
+            i += 0.05;
         }
 
         // Инициализация текста
         function initText() {
-            ctx.font = 'italic bold 48px Courier';
-            textLines.forEach(line => {
-                line.letters = line.text.split('');
-                line.drawnLetters = [];
-                line.textWidth = ctx.measureText(line.text).width;
+            messages.forEach(msg => {
+                msg.letters = msg.text.split('');
+                msg.drawnLetters = [];
+                ctx.font = `italic bold ${msg.fontSize}px Courier`;
+                msg.textWidth = ctx.measureText(msg.text).width;
             });
         }
 
-        // Рисование текста
+        // Рисование текста по буквам
         function drawText() {
             const now = Date.now();
             if (now - lastLetterTime < letterDelay) return;
             
             lastLetterTime = now;
-            ctx.fillStyle = 'red';
             
             let letterAdded = false;
             
-            textLines.forEach(line => {
-                if (line.letters.length > 0) {
-                    const letter = line.letters.shift();
-                    line.drawnLetters.push(letter);
+            messages.forEach(msg => {
+                if (msg.letters.length > 0) {
+                    const letter = msg.letters.shift();
+                    msg.drawnLetters.push(letter);
                     letterAdded = true;
                 }
             });
@@ -127,13 +115,14 @@
             if (!letterAdded) return;
             
             // Перерисовываем весь текст
-            textLines.forEach(line => {
-                if (line.drawnLetters.length === 0) return;
+            messages.forEach(msg => {
+                if (msg.drawnLetters.length === 0) return;
                 
-                ctx.font = `italic bold ${line.fontSize}px Courier`;
-                const fullText = line.drawnLetters.join('');
-                const x = canvas.width / 2 - line.textWidth / 2;
-                const y = canvas.height / 2 - line.y;
+                ctx.font = `italic bold ${msg.fontSize}px Courier`;
+                ctx.fillStyle = msg.color;
+                const fullText = msg.drawnLetters.join('');
+                const x = canvas.width / 2 - msg.textWidth / 2;
+                const y = canvas.height / 2 - msg.y;
                 
                 ctx.fillText(fullText, x, y);
             });
@@ -150,9 +139,8 @@
             if (!heartComplete) {
                 addHeartPoint();
                 
-                // Проверяем, прошло ли 15 секунд (увеличил время для полной прорисовки)
-                if (!startTime) startTime = Date.now();
-                if (Date.now() - startTime > 15000) {
+                if (!animationStartTime) animationStartTime = Date.now();
+                if (Date.now() - animationStartTime > 11000) {
                     heartComplete = true;
                     initText();
                 }
@@ -161,14 +149,9 @@
             // Рисуем текст, если сердце готово
             if (heartComplete) {
                 drawText();
-                
-                // Если весь текст отрисован, останавливаем анимацию
-                if (textLines.every(line => line.letters.length === 0)) {
-                    cancelAnimationFrame(animationId);
-                }
             }
             
-            animationId = requestAnimationFrame(animate);
+            requestAnimationFrame(animate);
         }
 
         // Запуск анимации
